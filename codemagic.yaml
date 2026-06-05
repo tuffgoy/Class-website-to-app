@@ -1,0 +1,100 @@
+workflows:
+  android-debug-build:
+    name: Klasse App - Debug APK
+    max_build_duration: 30
+    environment:
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+
+    scripts:
+      - name: Set SDK path
+        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > klasse-android/local.properties
+
+      - name: Generate Gradle wrapper
+        script: |
+          curl -s -L https://services.gradle.org/distributions/gradle-8.6-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+          /tmp/gradle-dist/gradle-8.6/bin/gradle wrapper \
+            --project-dir klasse-android \
+            --gradle-version 8.6 \
+            --distribution-type bin
+          chmod +x klasse-android/gradlew
+
+      - name: Build debug APK
+        script: |
+          cd klasse-android
+          set +e
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee /tmp/build_full.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo ""
+          echo "========== KOTLIN / COMPILER ERRORS =========="
+          grep -E "^e: |error:|Error:" /tmp/build_full.log | grep -v "^e: file" | head -30 || echo "No error lines matched"
+          echo "==============================================="
+          cp /tmp/build_full.log build.log
+          exit $BUILD_EXIT
+
+    artifacts:
+      - klasse-android/app/build/outputs/apk/debug/app-debug.apk
+      - klasse-android/build.log
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com    # ← replace with your email
+        notify:
+          success: true
+          failure: true
+
+  android-release-build:
+    name: Klasse App - Release APK
+    max_build_duration: 60
+    environment:
+      android_signing:
+        - klasse_keystore
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+
+    scripts:
+      - name: Set SDK path
+        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > klasse-android/local.properties
+
+      - name: Generate Gradle wrapper
+        script: |
+          curl -s -L https://services.gradle.org/distributions/gradle-8.6-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+          /tmp/gradle-dist/gradle-8.6/bin/gradle wrapper \
+            --project-dir klasse-android \
+            --gradle-version 8.6 \
+            --distribution-type bin
+          chmod +x klasse-android/gradlew
+
+      - name: Build release APK
+        script: |
+          cd klasse-android
+          ./gradlew assembleRelease --no-daemon
+
+    artifacts:
+      - klasse-android/app/build/outputs/apk/release/*.apk
+      - klasse-android/app/build/outputs/mapping/release/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com    # ← replace with your email
+        notify:
+          success: true
+          failure: true
