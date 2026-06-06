@@ -405,7 +405,7 @@ class MainActivity : AppCompatActivity() {
                 val galleryIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     type = mimeType
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    if (params.allowMultipleFiles()) putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                    if (params.mode == FileChooserParams.MODE_OPEN_MULTIPLE putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                 }
 
                 // Optionally add camera for image uploads
