@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <cache-path name="klasse_cache" path="." />
-    <external-cache-path name="klasse_ext_cache" path="." />
-    <files-path name="klasse_files" path="." />
-</paths>
